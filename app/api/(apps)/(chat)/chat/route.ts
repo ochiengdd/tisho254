@@ -146,18 +146,47 @@ function formatMessageContent(message: CoreMessage): string {
     }
 
     return JSON.stringify(
-      message.content.map((content) => {
-        if (content.type === "text") {
+      message.content.map((content: any) => {
+        // Handle text content type
+        if (content.type === "text" && typeof content.text === "string") {
           return {
             type: "text",
             text: content.text,
           };
         }
+
+        // Handle tool_call content with explicit type checking
+        if (typeof content.type === "string" && content.type.includes("tool")) {
+          // Create a basic structure that doesn't depend on specific property names
+          const toolCall = {
+            type: "tool-call",
+            toolCallId: undefined as string | undefined,
+            toolName: "" as string,
+            args: {} as Record<string, any>,
+          };
+
+          // Try to fill in the values from various possible structures
+          if (typeof content.id === "string") toolCall.toolCallId = content.id;
+          else if (typeof content.toolCallId === "string")
+            toolCall.toolCallId = content.toolCallId;
+
+          if (typeof content.name === "string")
+            toolCall.toolName = content.name;
+          else if (typeof content.toolName === "string")
+            toolCall.toolName = content.toolName;
+
+          if (typeof content.input === "object" && content.input !== null)
+            toolCall.args = content.input;
+          else if (typeof content.args === "object" && content.args !== null)
+            toolCall.args = content.args;
+
+          return toolCall;
+        }
+
+        // Default fallback for any other content type
         return {
-          type: "tool-call",
-          toolCallId: content.toolCallId,
-          toolName: content.toolName,
-          args: content.args,
+          type: typeof content.type === "string" ? content.type : "unknown",
+          content: JSON.stringify(content),
         };
       })
     );
@@ -295,6 +324,7 @@ export async function POST(request: Request) {
       system: createSystemPrompt(isBrowseEnabled),
       messages: coreMessages,
       maxSteps: 5,
+      experimental_toolCallStreaming: true,
       experimental_activeTools: activeTools,
       tools: createTools(streamingData, user.id, modelToUse, isBrowseEnabled),
       onFinish: async (result) => {

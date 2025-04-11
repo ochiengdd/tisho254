@@ -22,6 +22,7 @@ import { MessageActions } from "./message-actions";
 import { PreviewAttachment } from "./preview-attachment";
 import { Button } from "@/components/ui/button";
 import { AppCards } from "./widgets/app-cards";
+import { cn } from "@/lib/utils";
 
 type ToolState = "running" | "result" | "partial-call";
 
@@ -50,10 +51,11 @@ interface ToolInvocationWithResult extends ToolInvocation {
 interface InternetSearchResultProps {
   result?: {
     sources: Array<{ title: string; url: string }>;
-    summary: string;
+    summary?: string;
   };
   isLoading: boolean;
   status?: string;
+  messageContent?: string;
 }
 
 interface ExtendedMessage extends Message {
@@ -106,6 +108,13 @@ export function PreviewMessage({
     ...toolInvocations,
   ];
 
+  // Check if this message contains a suggestApps or browseInternet tool invocation
+  const hasSpecialToolResults = allToolInvocations.some(
+    (tool) =>
+      (tool.toolName === "suggestApps" && tool.state === "result") ||
+      (tool.toolName === "browseInternet" && tool.state === "result")
+  );
+
   return (
     <motion.div
       className="w-full mx-auto max-w-3xl px-4 group/message"
@@ -150,9 +159,12 @@ export function PreviewMessage({
             </div>
           )}
 
-          <div className="prose dark:prose-invert group-data-[role=user]/message:text-primary">
-            <Markdown>{message.content}</Markdown>
-          </div>
+          {/* Only render text content first if there are no special tool results */}
+          {!hasSpecialToolResults && (
+            <div className="prose dark:prose-invert group-data-[role=user]/message:text-primary">
+              <Markdown>{message.content}</Markdown>
+            </div>
+          )}
 
           {allToolInvocations.length > 0 && (
             <div className="flex flex-col gap-4">
@@ -183,12 +195,14 @@ export function PreviewMessage({
                             isLoading={state !== "result"}
                             result={result}
                             status={status?.content}
+                            messageContent={message.content}
                           />
                         ) : toolName === "suggestApps" ? (
                           <AppSuggestionResult
                             isLoading={state !== "result"}
                             result={result}
                             status={status?.content}
+                            messageContent={message.content}
                           />
                         ) : (
                           <pre>{JSON.stringify(result, null, 2)}</pre>
@@ -203,18 +217,21 @@ export function PreviewMessage({
                           skeleton: false,
                         })}
                       >
-                        {toolName === "createDocument" ? (
-                          <DocumentToolCall type="create" args={args} />
-                        ) : toolName === "updateDocument" ? (
-                          <DocumentToolCall type="update" args={args} />
-                        ) : toolName === "browseInternet" ? (
-                          <InternetSearchResult
-                            isLoading={true}
-                            status={status?.content}
-                          />
-                        ) : toolName === "suggestApps" ? (
-                          <AppSuggestionToolCall args={args} />
-                        ) : null}
+                        {/* Fixed alignment with assistant icon */}
+                        <div className="flex items-center">
+                          {toolName === "createDocument" ? (
+                            <DocumentToolCall type="create" args={args} />
+                          ) : toolName === "updateDocument" ? (
+                            <DocumentToolCall type="update" args={args} />
+                          ) : toolName === "browseInternet" ? (
+                            <InternetSearchResult
+                              isLoading={true}
+                              status={status?.content}
+                            />
+                          ) : toolName === "suggestApps" ? (
+                            <AppSuggestionToolCall args={args} />
+                          ) : null}
+                        </div>
                       </div>
                     );
                   }
@@ -266,6 +283,7 @@ const InternetSearchResult = ({
   result,
   isLoading,
   status,
+  messageContent,
 }: InternetSearchResultProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -287,87 +305,108 @@ const InternetSearchResult = ({
   if (!result) return null;
 
   return (
-    <div className="w-fit bg-background/50 border-[0.5px] border-border/40 rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.02)] backdrop-blur-[2px] overflow-hidden">
-      <div className="py-2.5 px-3.5 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="text-muted-foreground/70 flex items-center">
-            <Globe className="h-[15px] w-[15px]" />
+    <div className="flex flex-col gap-4">
+      <div className="w-fit bg-background/50 border-[0.5px] border-border/40 rounded-lg shadow-[0_1px_3px_0_rgb(0,0,0,0.02)] backdrop-blur-[2px] overflow-hidden">
+        <div className="py-2.5 px-3.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="text-muted-foreground/70 flex items-center">
+              <Globe className="h-[15px] w-[15px]" />
+            </div>
+            <div className="text-[13px] leading-[15px] text-muted-foreground/90">
+              <span className="opacity-90 font-medium">
+                {result.sources.length} sources found
+              </span>
+            </div>
           </div>
-          <div className="text-[13px] leading-[15px] text-muted-foreground/90">
-            <span className="opacity-90 font-medium">
-              {result.sources.length} sources found
-            </span>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              setIsOpen(!isOpen);
+            }}
+            className="h-7 w-7 p-0 hover:bg-muted/50"
+          >
+            {isOpen ? (
+              <ChevronUp className="h-[15px] w-[15px] text-muted-foreground/70" />
+            ) : (
+              <ChevronDown className="h-[15px] w-[15px] text-muted-foreground/70" />
+            )}
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.preventDefault();
-            setIsOpen(!isOpen);
-          }}
-          className="h-7 w-7 p-0 hover:bg-muted/50"
-        >
-          {isOpen ? (
-            <ChevronUp className="h-[15px] w-[15px] text-muted-foreground/70" />
-          ) : (
-            <ChevronDown className="h-[15px] w-[15px] text-muted-foreground/70" />
-          )}
-        </Button>
+
+        {isOpen && (
+          <>
+            {result.summary && (
+              <div className="px-3.5 pb-3.5 prose dark:prose-invert max-w-none text-[13px] leading-relaxed text-muted-foreground/90">
+                <Markdown>{result.summary}</Markdown>
+              </div>
+            )}
+
+            <div className="border-t border-border/40 divide-y divide-border/40">
+              {result.sources.map((source, i) => (
+                <a
+                  key={i}
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-3.5 py-2 hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center justify-center h-5 w-5 bg-background/80 rounded-md ring-[0.5px] ring-border/40">
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${source.url}&sz=32`}
+                      alt=""
+                      className="h-3.5 w-3.5"
+                    />
+                  </div>
+                  <span className="flex-1 text-[13px] leading-[15px] text-muted-foreground/90 line-clamp-1">
+                    {source.title}
+                  </span>
+                  <ChevronDown className="h-[15px] w-[15px] rotate-[-90deg] text-muted-foreground/50" />
+                </a>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
-      {isOpen && (
-        <>
-          <div className="px-3.5 pb-3.5 prose dark:prose-invert max-w-none text-[13px] leading-relaxed text-muted-foreground/90">
-            <Markdown>{result.summary}</Markdown>
-          </div>
-
-          <div className="border-t border-border/40 divide-y divide-border/40">
-            {result.sources.map((source, i) => (
-              <a
-                key={i}
-                href={source.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3.5 py-2 hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex items-center justify-center h-5 w-5 bg-background/80 rounded-md ring-[0.5px] ring-border/40">
-                  <img
-                    src={`https://www.google.com/s2/favicons?domain=${source.url}&sz=32`}
-                    alt=""
-                    className="h-3.5 w-3.5"
-                  />
-                </div>
-                <span className="flex-1 text-[13px] leading-[15px] text-muted-foreground/90 line-clamp-1">
-                  {source.title}
-                </span>
-                <ChevronDown className="h-[15px] w-[15px] rotate-[-90deg] text-muted-foreground/50" />
-              </a>
-            ))}
-          </div>
-        </>
+      {/* Add message content below the search results */}
+      {messageContent && (
+        <div className="mt-2 prose dark:prose-invert max-w-none group-data-[role=user]/message:text-primary">
+          <Markdown>{messageContent}</Markdown>
+        </div>
       )}
     </div>
   );
 };
 
+interface AppSuggestionResultProps {
+  result?: {
+    apps: any[];
+    total: number;
+    metadata?: {
+      analysis?: string;
+      needsCombination?: boolean;
+      recommendedWorkflow?: string;
+    };
+  };
+  isLoading: boolean;
+  status?: string;
+  messageContent?: string;
+}
+
 const AppSuggestionResult = ({
   result,
   isLoading,
   status,
-}: {
-  result?: { apps: any[]; total: number };
-  isLoading: boolean;
-  status?: string;
-}) => {
-  console.log("AppSuggestionResult:", { result, isLoading, status });
-
+  messageContent,
+}: AppSuggestionResultProps) => {
   return (
     <div className="flex flex-col gap-3">
       <div className="w-fit bg-background/50 border-[0.5px] border-border/40 py-2.5 px-3.5 rounded-lg flex flex-row items-center gap-3 shadow-[0_1px_3px_0_rgb(0,0,0,0.02)] backdrop-blur-[2px]">
         <div className="text-muted-foreground/70 flex items-center">
           <ComputerIcon
-            className={cx("h-[15px] w-[15px]", {
+            className={cn("h-[15px] w-[15px]", {
               "animate-pulse": isLoading,
             })}
           />
@@ -382,7 +421,16 @@ const AppSuggestionResult = ({
       </div>
 
       {result?.apps && result.apps.length > 0 && (
-        <AppCards apps={result.apps} />
+        <>
+          <AppCards apps={result.apps} />
+
+          {/* Add text content here, below the app cards */}
+          {messageContent && (
+            <div className="mt-4 prose dark:prose-invert max-w-none group-data-[role=user]/message:text-primary">
+              <Markdown>{messageContent}</Markdown>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

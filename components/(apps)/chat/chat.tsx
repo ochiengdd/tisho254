@@ -222,7 +222,7 @@ export function Chat({
             variant="ghost"
             className="order-2 hover:bg-primary/10 hover:text-primary md:order-1 md:px-2 px-2 md:h-fit ml-auto md:ml-0"
             onClick={() => {
-              router.push("/chat");
+              router.push("/apps/chat");
               router.refresh();
             }}
           >

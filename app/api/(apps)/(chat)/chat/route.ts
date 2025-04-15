@@ -32,10 +32,11 @@ import {
   convertToCoreMessages,
   CoreMessage,
   Message,
-  StreamData,
+  createDataStreamResponse,
   streamText,
   CoreUserMessage,
   generateText,
+  StepResult,
 } from "ai";
 import { createClient } from "@/lib/utils/supabase/server";
 import { getChatById } from "@/lib/db/cached-queries";
@@ -52,7 +53,7 @@ import {
   sanitizeResponseMessages,
 } from "@/lib/ai/chat";
 import { createSystemPrompt } from "@/app/(apps)/chat/prompt";
-import { createTools, allTools } from "@/app/(apps)/chat/tools";
+import { createTools, allTools, ToolsReturn } from "@/app/(apps)/chat/tools/";
 import { customModel } from "@/lib/ai/ai-utils";
 import { getUserCreditsQuery } from "@/lib/db/queries/general";
 import {
@@ -252,6 +253,12 @@ export async function POST(request: Request) {
 
   const supabase = createClient();
   const credits = await getUserCreditsQuery(supabase, user.id);
+  // Declare streamingData early, before the try block
+  // const streamingData = new StreamData(); // Deprecated
+
+  // Initial chat title logic (outside the main streaming response)
+  let initialChatTitle = "New Chat";
+  let isNewChat = false;
 
   try {
     // Chat title generation logic
@@ -263,6 +270,10 @@ export async function POST(request: Request) {
         modelId: selectedModelId,
       });
       await saveChat({ id, userId: user.id, title });
+      // Append chatReady signal AFTER saving the chat
+      // streamingData.append({ chatReady: true }); // Moved to createDataStreamResponse
+      initialChatTitle = title;
+      isNewChat = true;
     } else if (chat.user_id !== user.id) {
       return new Response("Unauthorized", { status: 401 });
     } else if (chat.title === "New Chat") {
@@ -278,6 +289,7 @@ export async function POST(request: Request) {
         .eq("user_id", user.id);
     }
 
+    // Save the initial user message immediately
     await saveMessages({
       chatId: id,
       messages: [
@@ -290,8 +302,6 @@ export async function POST(request: Request) {
         },
       ],
     });
-
-    const streamingData = new StreamData();
 
     const modelToUse = selectedModelId || "gpt-4o-mini";
 
@@ -318,101 +328,150 @@ export async function POST(request: Request) {
       );
     }
 
-    // Handle response (works for both premium and free features)
-    const result = await streamText({
-      model: customModel(modelToUse),
-      system: createSystemPrompt(isBrowseEnabled),
-      messages: coreMessages,
-      maxSteps: 5,
-      experimental_toolCallStreaming: true,
-      experimental_activeTools: activeTools,
-      tools: createTools(streamingData, user.id, modelToUse, isBrowseEnabled),
-      onFinish: async (result) => {
-        if (user && user.id) {
+    // Calculate headers before creating the response stream
+    const headers: Record<string, string> = {};
+    if (usageCheck.requiredCredits > 0) {
+      try {
+        await reduceUserCredits(user.email!, usageCheck.requiredCredits);
+        const updatedCredits = await getUserCreditsQuery(supabase, user.id);
+        const creditUsageData = {
+          cost: usageCheck.requiredCredits,
+          remaining: updatedCredits,
+          features: [
+            !FREE_MODELS.includes(selectedModelId as any)
+              ? "Premium Model"
+              : null,
+            isBrowseEnabled ? "Web Browsing" : null,
+          ].filter(Boolean),
+        };
+        headers["x-credit-usage"] = JSON.stringify(creditUsageData);
+      } catch (creditError) {
+        console.error(
+          "Failed to reduce credits or fetch updated count:",
+          creditError
+        );
+        headers["x-credit-error"] = "Failed to process credits";
+      }
+    }
+
+    // --- Start createDataStreamResponse ---
+    return createDataStreamResponse({
+      async execute(dataStream) {
+        // Write initial chat state if it's a new chat
+        if (isNewChat) {
+          dataStream.writeData({ chatReady: true });
+        }
+
+        // Handle response (works for both premium and free features)
+        const resultPromise = streamText({
+          model: customModel(modelToUse),
+          system: createSystemPrompt(isBrowseEnabled),
+          messages: coreMessages,
+          maxSteps: 5,
+          experimental_toolCallStreaming: true,
+          experimental_activeTools: activeTools,
+          tools: createTools(dataStream, user.id, modelToUse, isBrowseEnabled), // Pass dataStream
+          experimental_telemetry: {
+            isEnabled: true,
+            functionId: "stream-text",
+          },
+        });
+
+        // Use the SDK's helper to merge the main stream with the data stream
+        resultPromise.mergeIntoDataStream(dataStream);
+
+        // Await the completion of the streamText operation to access final results
+        const finalResult = await resultPromise;
+
+        // --- Logic moved from onFinish ---
+        if (user && user.id && finalResult) {
           try {
             // Get messages from the response
-            const responseMessages = result.steps.flatMap(
-              (step) => step.response?.messages || []
+            // Access steps from the resolved finalResult, awaiting the steps promise
+            const resolvedSteps = await finalResult.steps;
+            const responseMessages = resolvedSteps.flatMap(
+              (step: StepResult<ToolsReturn>) => step.response?.messages || [] // Use StepResult type
             );
 
             const responseMessagesWithoutIncompleteToolCalls =
               sanitizeResponseMessages(responseMessages);
 
+            // --- DE-DUPLICATION START ---
+            const uniqueMessagesMap = new Map<string, any>();
+            responseMessagesWithoutIncompleteToolCalls.forEach((message) => {
+              // Format content first to create a reliable unique key
+              const formattedContent = formatMessageContent(message);
+              const uniqueKey = `${message.role}-${JSON.stringify(
+                formattedContent
+              )}`;
+
+              if (!uniqueMessagesMap.has(uniqueKey)) {
+                // Generate ID only for unique messages before adding to map
+                const messageId = generateUUID();
+                uniqueMessagesMap.set(uniqueKey, {
+                  id: messageId, // Use the generated ID
+                  chat_id: id,
+                  role: message.role as MessageRole,
+                  content: formattedContent, // Use the pre-formatted content
+                  created_at: new Date().toISOString(),
+                });
+              }
+            });
+
+            // Extract the unique message objects from the map
+            const finalMessagesToSave = Array.from(uniqueMessagesMap.values());
+
+            // Update annotation logic to correctly associate annotations with the final unique messages
+            finalMessagesToSave.forEach((msg) => {
+              if (msg.role === "assistant") {
+                dataStream.writeMessageAnnotation({
+                  messageIdFromServer: msg.id, // Use the ID from the unique message object
+                });
+              }
+            });
+            // --- DE-DUPLICATION END ---
+
+            // Save only the unique messages
             await saveMessages({
               chatId: id,
-              messages: responseMessagesWithoutIncompleteToolCalls.map(
-                (message) => {
-                  const messageId = generateUUID();
-
-                  if (message.role === "assistant") {
-                    streamingData.appendMessageAnnotation({
-                      messageIdFromServer: messageId,
-                    });
-                  }
-
-                  return {
-                    id: messageId,
-                    chat_id: id,
-                    role: message.role as MessageRole,
-                    content: formatMessageContent(message),
-                    created_at: new Date().toISOString(),
-                  };
-                }
-              ),
+              messages: finalMessagesToSave,
             });
           } catch (error) {
             console.error("Failed to save chat:", error);
+            // Optionally write an error annotation to the stream
+            dataStream.writeMessageAnnotation({
+              type: "error",
+              message: "Failed to save chat history.",
+            });
           }
         }
-
-        streamingData.close();
+        // --- End logic moved from onFinish ---
       },
-      experimental_telemetry: {
-        isEnabled: true,
-        functionId: "stream-text",
+      headers: headers,
+      onError: (error) => {
+        console.error("Error during data stream generation:", error);
+        // Return a generic error message or customize based on the error
+        return `An error occurred: ${
+          error instanceof Error ? error.message : "Unknown stream error"
+        }`;
       },
     });
-
-    // Add credit usage data to headers only if credits were used
-    const headers: Record<string, string> = {};
-    if (usageCheck.requiredCredits > 0) {
-      await reduceUserCredits(user.email, usageCheck.requiredCredits);
-      const updatedCredits = await getUserCreditsQuery(supabase, user.id);
-      const creditUsageData = {
-        cost: usageCheck.requiredCredits,
-        remaining: updatedCredits,
-        features: [
-          !FREE_MODELS.includes(selectedModelId as any)
-            ? "Premium Model"
-            : null,
-          isBrowseEnabled ? "Web Browsing" : null,
-        ].filter(Boolean),
-      };
-      headers["x-credit-usage"] = JSON.stringify(creditUsageData);
-    }
-
-    return result.toDataStreamResponse({
-      data: streamingData,
-      headers,
-    });
+    // --- End createDataStreamResponse ---
   } catch (error) {
     console.error("Error in chat route:", error);
+    // This catch block might need adjustment as the main logic is now within createDataStreamResponse
+    // For now, let's keep the existing fallback for 'Chat ID already exists'
     if (error instanceof Error && error.message === "Chat ID already exists") {
-      // If chat already exists, just continue with the message saving
-      await saveMessages({
-        chatId: id,
-        messages: [
-          {
-            id: generateUUID(),
-            chat_id: id,
-            role: userMessage.role as MessageRole,
-            content: formatMessageContent(userMessage),
-            created_at: new Date().toISOString(),
-          },
-        ],
+      // This case should be less likely now with the check moved up, but keep as fallback
+      console.warn(
+        "Caught 'Chat ID already exists' outside main stream logic - check flow."
+      );
+      return new Response("Conflict: Chat ID potentially already exists", {
+        status: 409,
       });
     } else {
-      throw error; // Re-throw other errors
+      // For other errors caught *before* createDataStreamResponse
+      return new Response("Internal Server Error", { status: 500 });
     }
   }
 }

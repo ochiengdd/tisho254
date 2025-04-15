@@ -55,7 +55,6 @@ interface InternetSearchResultProps {
   };
   isLoading: boolean;
   status?: string;
-  messageContent?: string;
 }
 
 interface ExtendedMessage extends Message {
@@ -159,12 +158,13 @@ export function PreviewMessage({
             </div>
           )}
 
-          {/* Only render text content first if there are no special tool results */}
-          {!hasSpecialToolResults && (
-            <div className="prose dark:prose-invert group-data-[role=user]/message:text-primary">
-              <Markdown>{message.content}</Markdown>
-            </div>
-          )}
+          {/* Render text content if it exists */}
+          {typeof message.content === "string" &&
+            message.content.trim() !== "" && (
+              <div className="prose dark:prose-invert group-data-[role=user]/message:text-primary">
+                <Markdown>{message.content}</Markdown>
+              </div>
+            )}
 
           {allToolInvocations.length > 0 && (
             <div className="flex flex-col gap-4">
@@ -195,14 +195,12 @@ export function PreviewMessage({
                             isLoading={state !== "result"}
                             result={result}
                             status={status?.content}
-                            messageContent={message.content}
                           />
                         ) : toolName === "suggestApps" ? (
                           <AppSuggestionResult
                             isLoading={state !== "result"}
                             result={result}
                             status={status?.content}
-                            messageContent={message.content}
                           />
                         ) : (
                           <pre>{JSON.stringify(result, null, 2)}</pre>
@@ -283,7 +281,6 @@ const InternetSearchResult = ({
   result,
   isLoading,
   status,
-  messageContent,
 }: InternetSearchResultProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -369,13 +366,6 @@ const InternetSearchResult = ({
           </>
         )}
       </div>
-
-      {/* Add message content below the search results */}
-      {messageContent && (
-        <div className="mt-2 prose dark:prose-invert max-w-none group-data-[role=user]/message:text-primary">
-          <Markdown>{messageContent}</Markdown>
-        </div>
-      )}
     </div>
   );
 };
@@ -392,15 +382,15 @@ interface AppSuggestionResultProps {
   };
   isLoading: boolean;
   status?: string;
-  messageContent?: string;
 }
 
 const AppSuggestionResult = ({
   result,
   isLoading,
   status,
-  messageContent,
 }: AppSuggestionResultProps) => {
+  const [showDetails, setShowDetails] = useState(false);
+
   return (
     <div className="flex flex-col gap-3">
       <div className="w-fit bg-background/50 border-[0.5px] border-border/40 py-2.5 px-3.5 rounded-lg flex flex-row items-center gap-3 shadow-[0_1px_3px_0_rgb(0,0,0,0.02)] backdrop-blur-[2px]">
@@ -423,13 +413,6 @@ const AppSuggestionResult = ({
       {result?.apps && result.apps.length > 0 && (
         <>
           <AppCards apps={result.apps} />
-
-          {/* Add text content here, below the app cards */}
-          {messageContent && (
-            <div className="mt-4 prose dark:prose-invert max-w-none group-data-[role=user]/message:text-primary">
-              <Markdown>{messageContent}</Markdown>
-            </div>
-          )}
         </>
       )}
     </div>

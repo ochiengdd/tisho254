@@ -4,7 +4,8 @@ import { AIModel } from "@/lib/ai/models";
 export const FREE_MODELS = [
   "gpt-4o-mini",
   "claude-3-5-haiku-latest",
-  "llama-3.1-70b-versatile",
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "gemini-2.0-flash-001",
 ] as const;
 
 export function canUseConfiguration(

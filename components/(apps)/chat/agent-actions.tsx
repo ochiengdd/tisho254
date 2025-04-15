@@ -15,13 +15,13 @@ type ToolType = DocumentToolType | "browseInternet" | "suggestApps";
 const getActionText = (type: ToolType) => {
   switch (type) {
     case "create":
-      return "Creating";
+      return "Essay -";
     case "update":
-      return "Updating";
+      return "Essay -";
     case "browseInternet":
-      return "Searching";
+      return "Internet -";
     case "suggestApps":
-      return "Finding";
+      return "Apps -";
     default:
       return null;
   }
@@ -134,6 +134,10 @@ interface DocumentToolCallProps {
 }
 
 export function DocumentToolCall({ type, args }: DocumentToolCallProps) {
+  const safeArgs = args || {};
+  const title =
+    type === "create" ? safeArgs.title || "document" : "existing document";
+
   return (
     <div className="w-fit bg-background/50 border-[0.5px] border-border/40 py-2.5 px-3.5 rounded-lg flex flex-row items-center justify-between gap-3 shadow-[0_1px_3px_0_rgb(0,0,0,0.02)] backdrop-blur-[2px]">
       <div className="flex flex-row gap-3 items-center">
@@ -147,7 +151,7 @@ export function DocumentToolCall({ type, args }: DocumentToolCallProps) {
 
         <div className="text-[13px] leading-[15px] text-muted-foreground/90">
           <span className="opacity-60 font-normal">{getActionText(type)}</span>{" "}
-          <span className="opacity-90 font-medium">{args.title}</span>
+          <span className="opacity-90 font-medium">{title}</span>
         </div>
       </div>
 

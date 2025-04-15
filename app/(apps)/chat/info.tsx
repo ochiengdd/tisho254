@@ -1,131 +1,235 @@
+"use client";
+
 import { motion } from "framer-motion";
 import {
   BrainCircuitIcon,
   GlobeIcon,
   FileTextIcon,
   ImageIcon,
-  WrenchIcon,
-  LinkIcon,
-  RocketIcon,
   SparklesIcon,
   SearchIcon,
+  CodeIcon,
 } from "lucide-react";
-import Link from "next/link";
+import Image from "next/image";
+import { availableModels } from "@/lib/ai/models";
 
 export function AppInfo() {
+  // Group models by provider
+  const providers = {
+    OpenAI: availableModels.filter((model) => model.logo.includes("openai")),
+    Anthropic: availableModels.filter((model) =>
+      model.logo.includes("anthropic")
+    ),
+    Meta: availableModels.filter((model) => model.logo.includes("meta")),
+    Google: availableModels.filter((model) => model.logo.includes("google")),
+    xAI: availableModels.filter((model) => model.logo.includes("xai")),
+    DeepSeek: availableModels.filter((model) =>
+      model.logo.includes("deepseek")
+    ),
+  };
+
   const features = [
     {
       icon: <BrainCircuitIcon className="w-4 h-4" />,
       title: "Multiple AI Models",
-      description: "OpenAI, Anthropic and Groq via Vercel AI SDK",
+      color: "from-blue-500 to-indigo-600",
     },
     {
       icon: <SparklesIcon className="w-4 h-4" />,
       title: "Generative UI",
-      description: "Dynamic components and interactive app suggestions",
+      color: "from-amber-500 to-orange-600",
     },
     {
       icon: <SearchIcon className="w-4 h-4" />,
       title: "Smart Browsing",
-      description: "Real-time web search with content analysis",
+      color: "from-emerald-500 to-green-600",
     },
     {
       icon: <ImageIcon className="w-4 h-4" />,
       title: "Multimodal",
-      description: "Interact with images and files via Cloudflare Storage",
+      color: "from-violet-500 to-purple-600",
     },
     {
       icon: <GlobeIcon className="w-4 h-4" />,
-      title: "Web Search",
-      description: "Real-time information via Serper API and Jina AI",
+      title: "Internet Access",
+      color: "from-cyan-500 to-blue-600",
     },
     {
       icon: <FileTextIcon className="w-4 h-4" />,
-      title: "Canvas",
-      description: "Generate and edit documents with AI",
+      title: "Document Creation",
+      color: "from-rose-500 to-pink-600",
     },
   ];
 
   return (
     <motion.div
       key="overview"
-      className="w-full max-w-3xl mx-auto px-2"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      className="relative w-full max-w-3xl mx-auto px-2"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="rounded-2xl bg-gradient-to-b from-white/80 to-white/40 backdrop-blur-sm border shadow-sm">
-        <div className="p-4 space-y-3">
-          {/* Title */}
-          <div className="text-center space-y-1">
-            <h1 className="text-xl font-semibold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Advanced AI Assistant
-            </h1>
-            <p className="text-sm text-muted-foreground/80">
-              A powerful chatbot with generative UI and smart browsing
-              capabilities
+      {/* Glass background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/70 to-white/30 backdrop-blur-xl border border-white/50 shadow-lg -z-10 rounded-3xl" />
+
+      <div className="w-full h-full px-6">
+        {/* Header with subtle glow */}
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <div className="relative">
+              <div className="absolute -inset-1 bg-blue-500/10 blur-sm rounded-full -z-10"></div>
+              <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-900 via-gray-700 to-gray-800 bg-clip-text text-transparent leading-tight">
+                Advanced AI Chat Agent
+              </h1>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Multimodal AI agent with smart browsing & document generation
             </p>
           </div>
+        </div>
 
-          {/* Features Grid */}
-          <div className="grid gap-2 grid-cols-1 md:grid-cols-2">
+        {/* Provider Grid with Featured Models */}
+        <div className="mb-6">
+          <h2 className="text-xs font-medium text-gray-500 mb-3 flex items-center">
+            <span className="relative mr-2">
+              <span className="absolute inset-0 bg-blue-400/20 blur-sm rounded-full"></span>
+              <BrainCircuitIcon className="w-3.5 h-3.5 text-blue-600 relative" />
+            </span>
+            AI Providers & Models
+          </h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {Object.entries(providers).map(
+              ([provider, models], index) =>
+                models.length > 0 && (
+                  <motion.div
+                    key={provider}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="relative group overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-100/80 shadow-sm"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                    <div className="relative p-3 h-full">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-5 h-5 relative flex-shrink-0">
+                          <Image
+                            src={models[0].logo}
+                            alt={provider}
+                            width={20}
+                            height={20}
+                            className="object-contain"
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-gray-800">
+                          {provider}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        {models.slice(0, 2).map((model) => (
+                          <div
+                            key={model.id}
+                            className="flex items-center gap-1.5"
+                          >
+                            <div className="w-1 h-1 rounded-full bg-gray-300"></div>
+                            <span className="text-[10px] text-gray-600 truncate">
+                              {model.name}
+                              {model.vision && (
+                                <span className="ml-1 inline-flex items-center text-[8px] text-blue-600">
+                                  (Vision)
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        ))}
+
+                        {models.length > 2 && (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1 h-1 rounded-full bg-gray-300"></div>
+                            <span className="text-[10px] text-gray-500">
+                              +{models.length - 2} more
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+            )}
+
+            {/* Add Custom Models - Full Width */}
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="relative group overflow-hidden col-span-2 md:col-span-3"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-dashed border-gray-200 group-hover:border-blue-200 transition-colors"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-50/20 to-indigo-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+              <div className="relative p-4 h-full flex items-center">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-100 to-gray-50 group-hover:from-blue-50 group-hover:to-indigo-50 flex items-center justify-center mr-4 transition-colors shadow-sm">
+                  <CodeIcon className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
+                    Add any model from supported providers with a single line of
+                    code
+                  </h3>
+                  <p className="text-[10px] text-gray-500 mt-0.5 max-w-md">
+                    <code className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 font-mono">
+                      modelId: "your-custom-model-id"
+                    </code>
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Features Grid - More Beautiful */}
+        <div className="mb-6">
+          <h2 className="text-xs font-medium text-gray-500 mb-3 flex items-center">
+            <span className="relative mr-2">
+              <span className="absolute inset-0 bg-amber-400/20 blur-sm rounded-full"></span>
+              <SparklesIcon className="w-3.5 h-3.5 text-amber-500 relative" />
+            </span>
+            Key Capabilities
+          </h2>
+          <div className="grid grid-cols-3 gap-3">
             {features.map((feature, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="group flex gap-3 p-3 rounded-xl bg-white/60 hover:bg-white/90 border border-border/40 hover:border-border/80 transition-all duration-300 hover:shadow-sm"
+                transition={{ delay: i * 0.05 }}
+                className="relative group overflow-hidden"
               >
-                <div className="shrink-0 text-muted-foreground group-hover:text-primary transition-colors">
-                  {feature.icon}
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-foreground/90 group-hover:text-foreground leading-none mb-1 transition-colors">
+                <div className="absolute inset-0 bg-white rounded-xl border border-gray-100 shadow-sm"></div>
+                <div
+                  className={`absolute inset-0 rounded-xl bg-gradient-to-br ${feature.color
+                    .replace("from-", "from-")
+                    .replace(
+                      "to-",
+                      "to-"
+                    )}/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                ></div>
+
+                <div className="relative p-3">
+                  <div
+                    className={`w-7 h-7 rounded-full bg-gradient-to-r ${feature.color} flex items-center justify-center mb-2 shadow-sm`}
+                  >
+                    <div className="text-white">{feature.icon}</div>
+                  </div>
+                  <h3 className="text-xs font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
                     {feature.title}
                   </h3>
-                  <p className="text-xs text-muted-foreground/70 group-hover:text-muted-foreground leading-tight transition-colors">
-                    {feature.description}
-                  </p>
                 </div>
               </motion.div>
             ))}
-          </div>
-
-          {/* Technical Info */}
-          <div className="space-y-2 bg-gradient-to-br from-zinc-50/80 to-white/60 rounded-xl p-3 border">
-            <div className="flex items-center gap-2 px-1">
-              <WrenchIcon className="w-4 h-4 text-primary/70" />
-              <span className="text-sm font-medium text-foreground/90">
-                Technical Details
-              </span>
-            </div>
-
-            <div className="flex gap-2 p-2 rounded-lg hover:bg-white/80 transition-all duration-300">
-              <div className="shrink-0 text-muted-foreground mt-0.5">
-                <WrenchIcon className="w-4 h-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-foreground/90 leading-none mb-1">
-                  Project Structure
-                </h3>
-                <p className="text-xs text-muted-foreground/70 leading-tight">
-                  UI in app/(apps)/chat, components in components/chat. API
-                  routes under api/(apps)/chat/*
-                </p>
-              </div>
-            </div>
-
-            <div className="text-xs text-muted-foreground/70 pt-2 border-t border-border/40">
-              Read more in the{" "}
-              <Link
-                href="https://docs.anotherwrapper.com/ai/chat"
-                target="_blank"
-                className="text-primary hover:text-primary/80 font-medium transition-colors hover:underline"
-              >
-                documentation →
-              </Link>
-            </div>
           </div>
         </div>
       </div>

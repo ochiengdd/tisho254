@@ -3,12 +3,12 @@
 import { Attachment, Message } from "ai";
 import { useChat } from "ai/react";
 import { AnimatePresence } from "framer-motion";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useSWRConfig } from "swr";
 import { useWindowSize } from "usehooks-ts";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   PreviewMessage,
   ThinkingMessage,
@@ -57,6 +57,8 @@ export function Chat({
   const [currentModelId, setCurrentModelId] = useState(selectedModelId);
   const [isBrowseEnabled, setIsBrowseEnabled] = useState(initialBrowseEnabled);
   const { toast } = useToast();
+  const pathname = usePathname();
+  const navigatedRef = useRef(false);
 
   const handleBrowseToggle = useCallback((enabled: boolean) => {
     setIsBrowseEnabled(enabled);
@@ -180,10 +182,32 @@ export function Chat({
         }
       }
     },
-    onFinish: () => {
+    onFinish: (message) => {
       mutate("/api/history");
     },
   });
+
+  useEffect(() => {
+    const isOnNewChatPage = pathname === "/apps/chat";
+    if (
+      isOnNewChatPage &&
+      initialMessages.length === 0 &&
+      !navigatedRef.current
+    ) {
+      const chatReadySignalReceived = streamingData?.some(
+        (dataPiece: any) => dataPiece?.chatReady === true
+      );
+
+      if (chatReadySignalReceived) {
+        console.log(
+          "chatReady signal received on new chat page, navigating to:",
+          `/apps/chat/${id}`
+        );
+        navigatedRef.current = true;
+        router.push(`/apps/chat/${id}`);
+      }
+    }
+  }, [streamingData, pathname, initialMessages, id, router]);
 
   const { width: windowWidth = 1920, height: windowHeight = 1080 } =
     useWindowSize();
@@ -212,7 +236,7 @@ export function Chat({
     [messages]
   );
 
-  console.log(messages);
+  console.log("Current messages array:", messages);
 
   return (
     <>

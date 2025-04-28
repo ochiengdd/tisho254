@@ -54,18 +54,25 @@ export const overviewLinks: NavLink[] = [
 
 export const navlinks: NavLink[] = [
   {
-    href: "/apps/image-ai",
-    label: "Image AI",
-    icon: IconPhoto,
-    isNew: true,
-  },
-  {
     href: "/apps/chat",
     label: "Chat AI",
     icon: IconMessage2,
     isExternal: false,
     isNew: true,
   },
+  {
+    href: "/apps/studio",
+    label: "GPT Image",
+    icon: IconPhoto,
+    isNew: true,
+  },
+  {
+    href: "/apps/image-ai",
+    label: "Image AI",
+    icon: IconPhoto,
+    isNew: false,
+  },
+
   { href: "/apps/pdf", label: "PDF AI", icon: IconFileText },
   {
     href: "/apps/audio",
@@ -73,7 +80,7 @@ export const navlinks: NavLink[] = [
     icon: IconMicrophone,
     isUpdated: false,
   },
-  { href: "/apps/grok", label: "Grok xAI", icon: IconBolt, isNew: true },
+  { href: "/apps/grok", label: "Grok xAI", icon: IconBolt },
   { href: "/apps/vision", label: "Vision AI", icon: IconEye },
   {
     href: "/apps/claude",
@@ -101,12 +108,6 @@ export const landingPages = [
 
 export const otherLinks = [
   { href: "/", label: "Home", icon: IconHome },
-  {
-    href: "/changelog",
-    label: "Changelog",
-    icon: IconHistory,
-    isExternal: false,
-  },
   {
     href: "https://docs.anotherwrapper.com",
     label: "Documentation",

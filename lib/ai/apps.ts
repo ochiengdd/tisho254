@@ -13,9 +13,35 @@ export interface App {
 
 export const apps = [
   {
+    href: "/apps/studio",
+    title: "GPT Image Studio",
+    shortTitle: "GPT Image Studio",
+    shortDesc: "Generate stunning images with OpenAI",
+    tags: ["OpenAI", "GPT-Image-1"],
+    image:
+      "https://images.unsplash.com/photo-1617791160505-6f00504e3519?q=80&w=3056&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    description:
+      "Create stunning images with OpenAI's latest GPT-Image-1 model. Generate ad creatives, social media content, product mockups, and edit existing images with text prompts.",
+    features: [
+      "Create stunning images with OpenAI's latest GPT-Image-1 model",
+      "Generate ad creatives, social media content, product mockups",
+      "Edit existing images with text prompts",
+    ],
+    useCases: [
+      "Generate ad creatives, social media content, product mockups",
+      "Edit existing images with text prompts",
+    ],
+    techStack: ["OpenAI", "GPT-Image-1"],
+    simpleFeatures: [
+      "Create stunning images with OpenAI's latest GPT-Image-1 model",
+      "Generate ad creatives, social media content, product mockups",
+      "Edit existing images with text prompts",
+    ],
+  },
+  {
     href: "/apps/chat",
     title: "Advanced AI Chat Assistant",
-    shortTitle: "AI Chat",
+    shortTitle: "AI Chat Agent",
     shortDesc: "Intelligent conversational AI with advanced capabilities",
     tags: ["OpenAI", "Claude", "LLaMA 3", "Groq", "DeepSeek", "Multi-Modal"],
     features: [
@@ -110,7 +136,7 @@ export const apps = [
     ],
   },
   {
-    href: "/apps/audio/app",
+    href: "/apps/audio",
     title: "Speech to text using Whisper",
     shortTitle: "Whisper",
     shortDesc: "Audio transcription & summarization",
@@ -196,7 +222,7 @@ export const apps = [
     ],
   },
   {
-    href: "/apps/gpt/app",
+    href: "/apps/gpt",
     title: "Structured output with GPT-4o",
     shortTitle: "GPT 4o",
     shortDesc: "Generate structured output (JSON or text) with GPT",
@@ -243,7 +269,7 @@ export const apps = [
   },
 
   {
-    href: "/apps/vision/app",
+    href: "/apps/vision",
     title: "See with GPT-4o",
     shortTitle: "GPT-4o Vision",
     shortDesc: "AI-powered image analysis",
@@ -285,11 +311,15 @@ export const apps = [
     ],
   },
   {
-    href: "/apps/sdxl/app",
-    title: "Images with SDXL",
-    shortTitle: "SDXL",
-    shortDesc: "High-quality AI image generation",
-    tags: ["Replicate", "SDXL", "Image Generation", "Stable Diffusion"],
+    href: "/apps/image-ai",
+    title: "Multi-Model AI Image Generator",
+    shortTitle: "Image AI",
+    shortDesc: "Advanced AI image generation",
+    tags: ["Replicate", "SDXL", "Flux", "Recraft"],
+    image:
+      "https://images.unsplash.com/photo-1554147090-e1221a04a025?q=80&w=2648&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    description:
+      "Generate high-quality images using various state-of-the-art models through Replicate and the Vercel AI SDK. Choose from models like SDXL, Flux, Recraft V3, and more for perfect results.",
     features: [
       "Text-to-image generation",
       "High-resolution output",
@@ -319,8 +349,6 @@ export const apps = [
       "Cloudflare R2",
       "Sharp",
     ],
-    image:
-      "https://images.unsplash.com/photo-1717501218385-55bc3a95be94?q=80&w=2832&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     simpleFeatures: [
       "Create high-quality images from text descriptions",
       "Generate multiple images at once",
@@ -329,7 +357,7 @@ export const apps = [
     ],
   },
   {
-    href: "/apps/dalle/app",
+    href: "/apps/dalle",
     title: "Images with DALL·E",
     shortTitle: "DALL·E",
     shortDesc: "AI-powered image generation",
@@ -372,7 +400,7 @@ export const apps = [
     ],
   },
   {
-    href: "/apps/llama/app",
+    href: "/apps/llama",
     title: "JSON or text with LLaMA 3",
     shortTitle: "LLaMA 3",
     shortDesc: "Structured data generation with LLaMA",

@@ -41,8 +41,13 @@ export async function POST(request: NextRequest) {
       toolConfig.aiModel
     );
 
+    // Check if response has valid data
+    if (!responseData.data || responseData.data.length === 0) {
+      throw new Error("No image data received from OpenAI");
+    }
+
     // Get the image URL from the OpenAI response
-    const imageUrl = responseData.data[0].url;
+    const imageUrl = responseData.data[0]?.url;
     if (typeof imageUrl !== "string") {
       throw new Error("Invalid image URL received from OpenAI");
     }

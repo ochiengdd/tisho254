@@ -11,7 +11,6 @@ import {
   IconChevronRight,
 } from "@tabler/icons-react";
 import { isMobile } from "@/lib/utils";
-import { SidebarHistory } from "@/components/(apps)/chat/sidebar/sidebar-history";
 import { Badge } from "@/components/(apps)/dashboard/badge";
 import { Heading } from "./heading";
 import { IconLogout, IconLogin } from "@tabler/icons-react";
@@ -61,15 +60,10 @@ export function UnifiedSidebar({
   showChatHistory = false,
 }: UnifiedSidebarProps) {
   const [open, setOpen] = useState(!isMobile());
-  const [isChatExpanded, setIsChatExpanded] = useState(true);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const pathname = usePathname();
 
   const isActive = useCallback((href: string) => pathname === href, [pathname]);
-
-  // Separate chat link from other navlinks
-  const chatLink = navlinks.find((link) => link.label === "Chat AI");
-  const otherNavlinks = navlinks.filter((link) => link.label !== "Chat AI");
 
   const renderLinks = useCallback(
     (links: any[], heading: string, defaultExternal: boolean = false) => {
@@ -97,76 +91,8 @@ export function UnifiedSidebar({
             {heading}
           </Heading>
 
-          {/* Always render Chat AI first in Demo Apps section */}
-          {heading === "Demo Apps" && chatLink && (
-            <>
-              {showChatHistory ? (
-                <div className="mb-1">
-                  <button
-                    onClick={() => setIsChatExpanded(!isChatExpanded)}
-                    className={twMerge(
-                      "w-full text-primary hover:text-primary/50 transition duration-200 flex items-center justify-between py-2 px-4 rounded-md text-sm",
-                      pathname.includes("/chat") &&
-                        "bg-white shadow-lg text-primary"
-                    )}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <chatLink.icon
-                        className={twMerge(
-                          "h-4 w-4 flex-shrink-0",
-                          pathname.includes("/chat") && "text-sky-500"
-                        )}
-                      />
-                      <span>{chatLink.label}</span>
-                      {chatLink.isNew && <NewBadge />}
-                    </div>
-                    <IconChevronRight
-                      className={`h-4 w-4 transition-transform duration-200 ${
-                        isChatExpanded ? "rotate-90" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {isChatExpanded && (
-                    <div className="ml-4">
-                      <SidebarHistory
-                        user={user ?? undefined}
-                        limit={3}
-                        showAllHistory={showAllHistory}
-                        setShowAllHistory={setShowAllHistory}
-                      />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  href={chatLink.href}
-                  prefetch={!chatLink.isExternal}
-                  target={chatLink.isExternal ? "_blank" : undefined}
-                  rel={chatLink.isExternal ? "noopener noreferrer" : undefined}
-                  onClick={() => isMobile() && setOpen(false)}
-                  className={twMerge(
-                    "text-primary hover:text-primary/50 transition duration-200 flex items-center space-x-2 py-2 px-4 rounded-md text-sm",
-                    isActive(chatLink.href) && "bg-white shadow-lg text-primary"
-                  )}
-                >
-                  <chatLink.icon
-                    className={twMerge(
-                      "h-4 w-4 flex-shrink-0",
-                      isActive(chatLink.href) && "text-sky-500"
-                    )}
-                  />
-                  <span>{chatLink.label}</span>
-                  {chatLink.isNew && <NewBadge />}
-                </Link>
-              )}
-            </>
-          )}
-
-          {/* Render other links */}
+          {/* Render all links */}
           {linksToRender.map((link) => {
-            if (heading === "Demo Apps" && link.label === "Chat AI")
-              return null;
             const isExternal = link.isExternal ?? defaultExternal;
 
             return (
@@ -206,15 +132,7 @@ export function UnifiedSidebar({
         </>
       );
     },
-    [
-      isActive,
-      isChatExpanded,
-      pathname,
-      user,
-      showChatHistory,
-      showAllHistory,
-      setShowAllHistory,
-    ]
+    [user, pathname, showAllHistory]
   );
 
   const handleBadgeClick = () => {

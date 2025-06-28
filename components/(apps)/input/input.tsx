@@ -84,12 +84,6 @@ export default function InputCapture({
               <form onSubmit={handleSubmit} className="w-full">
                 <div className="flex flex-col">
                   <div className="w-full mb-5">
-                    {toolConfig.type === "vision" && (
-                      <Upload
-                        uploadConfig={toolConfig.upload}
-                        setImageUrl={setImageUrl}
-                      />
-                    )}
                     <RenderFields
                       fields={toolConfig.fields!}
                       formData={formData}
@@ -99,9 +93,7 @@ export default function InputCapture({
                 </div>
                 <div className="mb-5">
                   <Button
-                    disabled={
-                      (!imageUrl && toolConfig.type === "vision") || loading
-                    }
+                    disabled={loading}
                     type="submit"
                     className="bg-accent hover:bg-accent/80 text-white w-full"
                   >
@@ -120,17 +112,9 @@ export default function InputCapture({
           )}
         </div>
         <div className="w-full md:w-1/2 no-scrollbar">
-          {toolConfig.type === "gpt" ||
-          toolConfig.type === "grok" ||
-          toolConfig.type === "groq" ||
-          toolConfig.type === "claude" ||
-          toolConfig.type === "vision" ? (
+          {!generatedImage ? (
             emptyStateComponent
-          ) : (toolConfig.type === "sdxl" || toolConfig.type === "dalle") &&
-            !generatedImage ? (
-            emptyStateComponent
-          ) : (toolConfig.type === "sdxl" || toolConfig.type === "dalle") &&
-            generatedImage ? (
+          ) : (
             <AppInfoWrapper title="Your image has been generated.">
               <img
                 src={generatedImage}
@@ -140,7 +124,7 @@ export default function InputCapture({
                 Fill in the form on the right to generate a different image.
               </p>
             </AppInfoWrapper>
-          ) : null}
+          )}
         </div>
       </div>
     </section>

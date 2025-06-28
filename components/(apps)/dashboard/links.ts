@@ -13,6 +13,7 @@ import {
   IconHistory,
   IconLayoutDashboard,
   IconBook,
+  IconShirt,
 } from "@tabler/icons-react";
 
 type NavLink = {
@@ -53,6 +54,12 @@ export const overviewLinks: NavLink[] = [
 ];
 
 export const navlinks: NavLink[] = [
+  {
+    href: "/apps/tshirt-printing",
+    label: "T-shirt Printing",
+    icon: IconShirt,
+    isNew: true,
+  },
   {
     href: "/apps/image-ai",
     label: "Image AI",
